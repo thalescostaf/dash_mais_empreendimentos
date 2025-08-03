@@ -58,8 +58,15 @@ else:
 # Se estiver na página do menu, exibe a página
 if "pagina" in st.session_state and st.session_state["pagina"] == "menu":
     st.write("Bem-vindo ao Menu Principal!")
-    # Aqui você pode adicionar os botões de navegação para outras páginas
-    # Exemplo:
-    if st.button("Ir para Fluxo de Caixa"):
-        # Navega para a página de fluxo de caixa
-        st.switch_page("pages/fluxo_caixa.py")
+    # Botões de navegação para outras páginas
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("Ir para Lançamentos"):
+            # Navega para a página de lançamentos
+            st.switch_page("pages/lancamentos.py")
+    
+    with col2:
+        if st.button("Ir para Métricas"):
+            # Navega para a página de métricas
+            st.switch_page("pages/metricas.py")
