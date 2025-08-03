@@ -46,6 +46,10 @@ else:
                 st.success(f"✅ Bem-vindo, {dados.data[0]['nome']}!")
                 # Armazenar no session_state que o usuário está logado
                 st.session_state["usuario_logado"] = True
+                st.session_state["usuario"] = {
+                    "id": dados.data[0]['id'],
+                    "nome": dados.data[0]['nome']  # Se o nome foi configurado no Supabase
+                }
                 st.session_state["pagina"] = "menu"  # Marcar a página do menu
         except Exception as e:
             st.error("Erro ao autenticar. Verifique email/senha.")
@@ -54,3 +58,8 @@ else:
 # Se estiver na página do menu, exibe a página
 if "pagina" in st.session_state and st.session_state["pagina"] == "menu":
     st.write("Bem-vindo ao Menu Principal!")
+    # Aqui você pode adicionar os botões de navegação para outras páginas
+    # Exemplo:
+    if st.button("Ir para Fluxo de Caixa"):
+        # Navega para a página de fluxo de caixa
+        st.switch_page("pages/fluxo_caixa.py")
