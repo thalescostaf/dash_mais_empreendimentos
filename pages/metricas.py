@@ -40,17 +40,6 @@ else:
     df = pd.DataFrame(transacoes)
     df['data'] = pd.to_datetime(df['data']).dt.tz_localize(None).dt.date
 
-    # Calcular totais de entradas, saídas e saldo
-    total_entradas = df[df['tipo'] == 'entrada']['valor'].sum()
-    total_saidas = df[df['tipo'] == 'saida']['valor'].sum()
-    saldo = total_entradas - total_saidas
-
-    # Exibir métricas
-    st.subheader("💵 Resumo")
-    st.write(f"**Total de Entradas**: R$ {total_entradas:.2f}")
-    st.write(f"**Total de Saídas**: R$ {total_saidas:.2f}")
-    st.write(f"**Saldo**: R$ {saldo:.2f}")
-
     # Filtros
     st.subheader("🔍 Filtros")
     colf1, colf2 = st.columns(2)
@@ -73,7 +62,18 @@ else:
     if tipo_filtro != "todos":
         df_filtrado = df_filtrado[df_filtrado['tipo'] == tipo_filtro]
 
-    # Exibir transações
+    # Calcular totais de entradas, saídas e saldo (baseado no filtro)
+    total_entradas = df_filtrado[df_filtrado['tipo'] == 'entrada']['valor'].sum()
+    total_saidas = df_filtrado[df_filtrado['tipo'] == 'saida']['valor'].sum()
+    saldo = total_entradas - total_saidas
+
+    # Exibir métricas
+    st.subheader("💵 Resumo")
+    st.write(f"**Total de Entradas**: R$ {total_entradas:.2f}")
+    st.write(f"**Total de Saídas**: R$ {total_saidas:.2f}")
+    st.write(f"**Saldo**: R$ {saldo:.2f}")
+
+    # Exibir transações filtradas
     st.subheader("📋 Transações")
     for _, t in df_filtrado.iterrows():
         with st.expander(f"{t['descricao']} - R$ {t['valor']} ({t['tipo']}) - {t['data'].strftime('%d/%m/%Y')}"):
