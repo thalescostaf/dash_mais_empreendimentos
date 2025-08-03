@@ -16,11 +16,11 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = False
 
+# Mostrar página de login ou menu
 if st.session_state["usuario_logado"]:
     # Se o usuário estiver logado, mostra o menu
-    st.experimental_set_query_params()
     st.write("Bem-vindo, você está autenticado!")
-    st.experimental_rerun()  # Recarregar após o login bem-sucedido
+    st.session_state["pagina"] = "menu"  # Marcar que está na página do menu
 else:
     # Se o usuário não estiver logado, exibe o login
     st.set_page_config(page_title="Login - Dash", layout="centered")
@@ -46,8 +46,11 @@ else:
                 st.success(f"✅ Bem-vindo, {dados.data[0]['nome']}!")
                 # Armazenar no session_state que o usuário está logado
                 st.session_state["usuario_logado"] = True
-                st.experimental_rerun()  # Recarregar após login bem-sucedido
-
+                st.session_state["pagina"] = "menu"  # Marcar a página do menu
         except Exception as e:
             st.error("Erro ao autenticar. Verifique email/senha.")
             st.exception(e)
+
+# Se estiver na página do menu, exibe a página
+if "pagina" in st.session_state and st.session_state["pagina"] == "menu":
+    st.write("Bem-vindo ao Menu Principal!")
