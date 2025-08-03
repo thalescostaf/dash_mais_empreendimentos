@@ -1,10 +1,9 @@
-# metricas.py
-
 import streamlit as st
 from supabase import create_client
 from dotenv import load_dotenv
 import os
 import pandas as pd
+import plotly.express as px
 
 # Carrega variáveis do .env
 load_dotenv()
@@ -52,8 +51,8 @@ else:
     st.write(f"**Total de Saídas**: R$ {total_saidas:.2f}")
     st.write(f"**Saldo**: R$ {saldo:.2f}")
 
-    # Exibir transações
-    st.subheader("📋 Transações")
+    # Filtros
+    st.subheader("🔍 Filtros")
     colf1, colf2 = st.columns(2)
     with colf1:
         data_inicio = st.date_input("Data inicial", value=None)
@@ -74,6 +73,8 @@ else:
     if tipo_filtro != "todos":
         df_filtrado = df_filtrado[df_filtrado['tipo'] == tipo_filtro]
 
+    # Exibir transações
+    st.subheader("📋 Transações")
     for _, t in df_filtrado.iterrows():
         with st.expander(f"{t['descricao']} - R$ {t['valor']} ({t['tipo']}) - {t['data'].strftime('%d/%m/%Y')}"):
             col1, col2, col3 = st.columns([4, 2, 2])
@@ -87,3 +88,31 @@ else:
                     col3.markdown(f"👤 Adicionado por {usuario_adicionador[0]['nome']}")
                 else:
                     col3.markdown("👤 Adicionado por [Desconhecido]")
+
+    # Gráficos dinâmicos
+    st.subheader("📊 Gráficos")
+
+    # Gráfico de Barras: Entradas e Saídas por Data
+    df_grouped = df_filtrado.groupby(['data', 'tipo']).agg({'valor': 'sum'}).reset_index()
+    fig = px.bar(df_grouped, x='data', y='valor', color='tipo', 
+                 labels={'data': 'Data', 'valor': 'Valor', 'tipo': 'Tipo'},
+                 title='Entradas e Saídas por Data')
+    st.plotly_chart(fig)
+
+    # Gráfico de Linha: Evolução do Saldo
+    df_filtrado['saldo_acumulado'] = df_filtrado.groupby('usuario_id')['valor'].cumsum()
+    fig2 = px.line(df_filtrado, x='data', y='saldo_acumulado', 
+                   title='Evolução do Saldo de Fluxo de Caixa ao Longo do Tempo',
+                   labels={'data': 'Data', 'saldo_acumulado': 'Saldo Acumulado'})
+    st.plotly_chart(fig2)
+
+    # Gráfico de Pizza: Distribuição de Entradas e Saídas
+    df_pie = df_filtrado.groupby('tipo').agg({'valor': 'sum'}).reset_index()
+    fig3 = px.pie(df_pie, names='tipo', values='valor', title='Distribuição de Entradas e Saídas')
+    st.plotly_chart(fig3)
+
+    # Gráfico de Área: Entradas vs Saídas por Período
+    fig4 = px.area(df_grouped, x='data', y='valor', color='tipo', 
+                   title='Entradas vs Saídas por Período', 
+                   labels={'data': 'Data', 'valor': 'Valor', 'tipo': 'Tipo'})
+    st.plotly_chart(fig4)
