@@ -12,7 +12,7 @@ st.write("Bem-vindo à área principal do sistema.")
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.button("Ir para Lançamentos"):
+    if st.button("Lançar despesa"):
         # Navega para a página de lançamentos
         st.switch_page("pages/lancamentos.py")
 
