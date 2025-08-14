@@ -7,3 +7,4 @@ with st.spinner('Aguarde...'):
     time.sleep(5)
 st.success("BEM VINDO!")
 
+st.text("Bem vindo ao painel de gerenciamento de Leads")
