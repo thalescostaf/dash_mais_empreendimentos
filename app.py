@@ -75,10 +75,57 @@ for emp in empreendimentos:
                 st.experimental_rerun()
 
 # ========================================
-# Espaço para Leads e Usuários
+# Leads
 # ========================================
-st.header("Gerenciar Leads (em breve)")
-st.info("Área de filtros e listagem de leads será adicionada.")
+st.header("Gerenciar Leads")
 
-st.header("Gerenciar Usuários (em breve)")
-st.info("Área de filtros e listagem de usuários será adicionada.")
+# Filtros de Leads
+with st.expander("Filtros de Leads"):
+    filtro_objetivo = st.text_input("Objetivo")
+    filtro_forma_pagamento = st.text_input("Forma de Pagamento")
+    filtro_potencial = st.text_input("Potencial")
+
+# Consulta Leads com filtros
+query = supabase.table("mais_emp_lead").select("*")
+
+if filtro_objetivo:
+    query = query.ilike("objetivo", f"%{filtro_objetivo}%")
+if filtro_forma_pagamento:
+    query = query.ilike("forma_pagamento", f"%{filtro_forma_pagamento}%")
+if filtro_potencial:
+    query = query.ilike("potencial", f"%{filtro_potencial}%")
+
+leads = query.execute().data
+
+if leads:
+    st.dataframe(leads, use_container_width=True)
+else:
+    st.info("Nenhum lead encontrado.")
+
+# ========================================
+# Usuários
+# ========================================
+st.header("Gerenciar Usuários")
+
+# Filtros de Usuários
+with st.expander("Filtros de Usuários"):
+    filtro_nome = st.text_input("Nome")
+    filtro_email = st.text_input("Email")
+    filtro_telefone = st.text_input("Telefone")
+
+# Consulta Usuários com filtros
+query_users = supabase.table("mais_emp_usuarios").select("*")
+
+if filtro_nome:
+    query_users = query_users.ilike("nome", f"%{filtro_nome}%")
+if filtro_email:
+    query_users = query_users.ilike("email", f"%{filtro_email}%")
+if filtro_telefone:
+    query_users = query_users.ilike("telefone", f"%{filtro_telefone}%")
+
+usuarios = query_users.execute().data
+
+if usuarios:
+    st.dataframe(usuarios, use_container_width=True)
+else:
+    st.info("Nenhum usuário encontrado.")
