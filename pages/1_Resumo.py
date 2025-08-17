@@ -6,6 +6,18 @@ from utils.supabase_client import get_table_data
 st.title("📈 Resumo do Sistema")
 st.subheader("📊 Visão geral com métricas e gráficos")
 
+def rerun():
+    try:
+        st.rerun()
+    except Exception:
+        st.experimental_rerun()
+
+# topo com botão de atualizar
+colA, colB = st.columns([1, 3])
+with colA:
+    if st.button("🔄 Atualizar lista"):
+        rerun()
+
 # Carregar dados
 usuarios = pd.DataFrame(get_table_data("mais_emp_usuarios"))
 empreendimentos = pd.DataFrame(get_table_data("mais_emp_empreendimentos"))
