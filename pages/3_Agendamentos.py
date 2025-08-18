@@ -19,14 +19,22 @@ with colA:
 usuarios = pd.DataFrame(get_table_data("mais_emp_usuarios"))
 ag_raw = pd.DataFrame(get_table_data("mais_emp_agendamento"))
 
-# Garantir colunas
-for df, needed in [(ag_raw, ["id_agendamento", "id_usuario", "cliente_id", "tipo_evento", "data", "horario", "status", "negociacao", "created_at"]),
-                   (usuarios, ["id_usuario", "nome"])]:
+# Garantir colunas esperadas
+for df, needed in [
+    (ag_raw, ["id_agendamento", "id_usuario", "cliente_id", "tipo_evento", "data", "horario", "status", "negociacao", "created_at"]),
+    (usuarios, ["id_usuario", "nome"])
+]:
     for c in needed:
         if c not in df.columns:
             df[c] = None
 
-# Visão amigável (sem IDs)
+# Se não houver usuários, evita quebra nos selects
+if usuarios.empty:
+    st.warning("Não há usuários cadastrados. Cadastre um usuário antes de criar/editar agendamentos.")
+else:
+    usuarios = usuarios.reset_index(drop=True)
+
+# Visão amigável (sem IDs). Mantemos Usuário e Cliente na view, mas agora são a mesma pessoa
 ag_view = ag_raw.copy()
 if not ag_view.empty:
     ag_view = ag_view.merge(
@@ -37,7 +45,7 @@ if not ag_view.empty:
         on="cliente_id", how="left"
     )
 
-# Filtros
+# ---------------- Filtros ----------------
 st.markdown("### 🔎 Filtros")
 col1, col2, col3 = st.columns(3)
 f_status = col1.text_input("Status")
@@ -56,7 +64,7 @@ if f_pessoa:
     )
     df_view = df_view[mask]
 
-# Tabela amigável (sem IDs) + datas
+# ---------------- Tabela amigável ----------------
 cols_show = ["Usuário", "Cliente", "tipo_evento", "data", "horario", "status", "negociacao", "created_at"]
 df_show = df_view[cols_show] if not df_view.empty else pd.DataFrame(columns=cols_show)
 df_show = df_show.rename(columns={
@@ -78,23 +86,19 @@ if not df_show.empty:
         pass
 st.dataframe(df_show)
 
-# ➕ Adicionar
+# ---------------- Adicionar ----------------
 st.markdown("### ➕ Registrar Agendamento")
 with st.form("add_agendamento"):
-    # Agora: apenas 1 campo de usuário; gravaremos o mesmo ID em id_usuario e cliente_id
     usuario_sel = st.selectbox(
         "Usuário",
         usuarios.to_dict("records"),
         format_func=lambda x: x.get("nome", "") if isinstance(x, dict) else ""
     )
 
-    # Evento apenas Reunião ou Visita
     tipo_evento = st.radio("Evento", ["Reunião", "Visita"])
 
     data_evento = st.date_input("Data")
     horario = st.time_input("Horário")
-
-    # Status fica automático como "agendado" (não exibimos input)
     negociacao = st.text_area("Negociação")
 
     submitted = st.form_submit_button("Adicionar")
@@ -102,9 +106,9 @@ with st.form("add_agendamento"):
         try:
             uid = usuario_sel.get("id_usuario") if isinstance(usuario_sel, dict) else None
             insert_data("mais_emp_agendamento", {
-                "id_usuario": uid,                 # mesmo usuário
-                "cliente_id": uid,                 # mesmo usuário (usuario=cliente)
-                "tipo_evento": tipo_evento or None,    # Reunião/Visita
+                "id_usuario": uid,                 # usuário e cliente são o mesmo
+                "cliente_id": uid,
+                "tipo_evento": tipo_evento or None,
                 "data": str(data_evento) if data_evento else None,
                 "horario": str(horario) if horario else None,
                 "status": "agendado",              # automático no cadastro
@@ -115,7 +119,7 @@ with st.form("add_agendamento"):
         except Exception as e:
             st.error(f"Erro ao inserir: {e}")
 
-# ✏️ Editar
+# ---------------- Editar ----------------
 st.markdown("### ✏️ Editar Agendamento")
 if not ag_raw.empty:
     selected = st.selectbox(
@@ -123,20 +127,21 @@ if not ag_raw.empty:
         ag_raw.to_dict("records"),
         format_func=lambda x: f"{x.get('tipo_evento','')} - {x.get('data','')}"
     )
-    with st.form("edit_agendamento"):
-        # índice seguro
-        def safe_index(df, col, val):
-            try:
-                return df.index[df[col] == val][0]
-            except Exception:
-                return 0
 
+    def safe_index(df, col, val) -> int:
+        try:
+            # Garante int nativo (evita StreamlitAPIException: int64)
+            return int(df.index[df[col] == val][0])
+        except Exception:
+            return 0
+
+    with st.form("edit_agendamento"):
         # Apenas um usuário (igual para id_usuario e cliente_id)
         idx_user = safe_index(usuarios, "id_usuario", selected.get("id_usuario") or selected.get("cliente_id"))
         usuario_sel_ed = st.selectbox(
             "Usuário",
             usuarios.to_dict("records"),
-            index=idx_user,
+            index=int(idx_user),  # garantir int nativo
             format_func=lambda x: x.get("nome", "") if isinstance(x, dict) else ""
         )
 
@@ -150,7 +155,7 @@ if not ag_raw.empty:
         data_evento_ed = st.date_input("Data", None if pd.isna(d_default) else d_default.date())
         horario_ed = st.time_input("Horário", None if pd.isna(t_default) else t_default.time())
 
-        # Status editável pelo admin: agendado → realizada
+        # Status editável pelo admin: agendado ↔ realizada
         status_atual = selected.get("status") or "agendado"
         status_ed = st.radio("Status", ["agendado", "realizada"], index=0 if status_atual == "agendado" else 1)
 
@@ -175,7 +180,7 @@ if not ag_raw.empty:
 else:
     st.info("Nenhum agendamento para editar.")
 
-# 🗑️ Excluir
+# ---------------- Excluir ----------------
 st.markdown("### 🗑️ Excluir Agendamento")
 if not ag_view.empty:
     selected = st.selectbox(
