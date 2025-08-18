@@ -12,13 +12,11 @@ def rerun():
     except Exception:
         st.experimental_rerun()
 
-# topo com botão de atualizar
-colA, colB = st.columns([1, 3])
+colA, _ = st.columns([1, 3])
 with colA:
-    if st.button("🔄 Atualizar lista"):
+    if st.button("🔄 Atualizar"):
         rerun()
 
-# Carregar dados
 usuarios = pd.DataFrame(get_table_data("mais_emp_usuarios"))
 empreendimentos = pd.DataFrame(get_table_data("mais_emp_empreendimentos"))
 leads = pd.DataFrame(get_table_data("mais_emp_lead"))
@@ -33,14 +31,29 @@ col4.metric("Agendamentos", len(agendamentos))
 
 st.markdown("---")
 
-# Leads por Empreendimento (nome amigável)
+# Leads por Empreendimento (usa nome amigável)
 st.subheader("📋 Leads por Empreendimento")
-if not leads.empty and not empreendimentos.empty:
-    merged = leads.merge(
-        empreendimentos[["id_empreendimento", "nome"]],
-        on="id_empreendimento", how="left"
-    ).rename(columns={"nome": "Empreendimento"})
-    fig = px.histogram(merged, x="Empreendimento", title="Distribuição de Leads por Empreendimento")
-    st.plotly_chart(fig, use_container_width=True)
+if not leads.empty:
+    df = leads.copy()
+    if "id_empreendimento" not in df.columns:
+        df["id_empreendimento"] = None
+
+    if not empreendimentos.empty:
+        df = df.merge(
+            empreendimentos[["id_empreendimento", "nome"]].rename(columns={"nome": "Empreendimento"}),
+            on="id_empreendimento",
+            how="left"
+        )
+    else:
+        df["Empreendimento"] = None
+
+    df["Empreendimento"] = df["Empreendimento"].fillna("Sem vínculo")
+
+    agg = df.groupby("Empreendimento", dropna=False).size().reset_index(name="Leads")
+    if not agg.empty and "Empreendimento" in agg.columns:
+        fig = px.bar(agg, x="Empreendimento", y="Leads", title="Leads por Empreendimento")
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("Sem dados de leads para exibir.")
 else:
     st.info("Sem dados de leads para exibir.")
